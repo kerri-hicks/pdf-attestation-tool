@@ -44,7 +44,7 @@ The PDF Attestation Tool addresses an important accessibility compliance need: e
 4. **Verify installation**:
    - The plugin creates a network-wide database table on activation
    - The database table is automatically created—no manual setup needed
-   - Visit a site in your network and go to Tools → PDF Upload Tool
+   - Visit a site in your network and go to Media → PDF Upload Tool
    - Visit Network Admin → PDF Attestations to view the audit dashboard
 
 ## Usage
@@ -53,7 +53,7 @@ The PDF Attestation Tool addresses an important accessibility compliance need: e
 
 1. **Navigate to the Upload Tool**:
    - Log in with an account that has upload permissions (Author, Editor, etc.)
-   - Go to Tools → PDF Upload Tool
+   - Go to Media → PDF Upload Tool
 
 2. **Select a PDF file**:
    - Click "Select PDF File"
@@ -202,7 +202,7 @@ This plugin helps with compliance by:
 
 ### "PDF uploads are not allowed through the standard media library"
 
-This is expected! PDFs must be uploaded using the PDF Upload Tool (Tools → PDF Upload Tool). This error appears if you try to upload a PDF through the regular media library.
+This is expected! PDFs must be uploaded using the PDF Upload Tool (Media → PDF Upload Tool). This error appears if you try to upload a PDF through the regular media library.
 
 ### Plugin doesn't activate
 
