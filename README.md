@@ -112,10 +112,10 @@ The PDF Attestation Tool addresses an important accessibility compliance need: e
 
 This plugin blocks PDFs from being uploaded through **any other mechanism**:
 
-- ❌ Standard Media Library upload
-- ❌ Drag-and-drop media uploader
-- ❌ REST API endpoints
-- ❌ Any non-attestation method
+-  Standard Media Library upload
+-  Drag-and-drop media uploader
+-  REST API endpoints
+-  Any non-attestation method
 
 Only the dedicated attestation tool allows PDF uploads.
 
@@ -137,7 +137,7 @@ These records are **permanent** and cannot be deleted. This creates an auditable
 
 ## For Single-Site WordPress
 
-This plugin is built specifically for WordPress Multisite. If you want to use it on a single-site WordPress installation, you can modify it:
+This plugin is built specifically for WordPress Multisite. If you want to use it on a single-site WordPress installation, you can modify it (suggested modifications to try, at your own risk):
 
 1. Open `/includes/class-pdf-attestation-database.php`
 2. Change `$this->wpdb->base_prefix` to `$this->wpdb->prefix` on lines that reference the table
@@ -178,13 +178,13 @@ No new custom capabilities are created—the plugin integrates with existing Wor
 
 ## Security Features
 
-✓ **CSRF Protection**: All forms use WordPress nonces  
-✓ **Capability Checks**: Only authorized users can access the upload tool  
-✓ **File Type Validation**: MIME type checking, not just extension  
-✓ **Input Sanitization**: All user input is sanitized before database storage  
-✓ **SQL Injection Prevention**: All queries use prepared statements  
-✓ **REST API Protection**: PDFs are blocked from REST API uploads  
-✓ **No Bypass Mechanisms**: Even super-admins must use the attestation tool  
+**CSRF Protection**: All forms use WordPress nonces  
+**Capability Checks**: Only authorized users can access the upload tool  
+**File Type Validation**: MIME type checking, not just extension  
+**Input Sanitization**: All user input is sanitized before database storage  
+**SQL Injection Prevention**: All queries use prepared statements  
+**REST API Protection**: PDFs are blocked from REST API uploads  
+**No Bypass Mechanisms**: Even super-admins must use the attestation tool  
 
 ## Compliance and Legal Considerations
 
@@ -228,14 +228,16 @@ This is expected! PDFs must be uploaded using the PDF Upload Tool (Media → PDF
 
 ```
 pdf-attestation-tool/
-├── pdf-attestation-tool.php              # Main plugin file with hooks
+├── pdf-attestation-tool.php                  # Main plugin file with hooks
 ├── includes/
-│   ├── class-pdf-attestation-database.php    # Database operations
-│   ├── class-pdf-attestation-upload.php      # Upload form and processing
-│   ├── class-pdf-attestation-admin.php       # Network admin interface
-│   └── functions-pdf-attestation.php         # Helper functions
-├── readme.md                             # This file
-└── languages/                            # Localization (for future use)
+│   ├── class-pdf-attestation-database.php      # Database operations
+│   ├── class-pdf-attestation-upload.php        # Upload form and processing
+│   ├── class-pdf-attestation-admin.php         # Network admin interface
+│   └── functions-pdf-attestation.php           # Helper functions
+├── README.md                                 # This file
+├── LICENSE                                   # Polyform 1.0.0
+├── QUICK_START.md                            # Instructions to get started using the plugin
+└── languages/                                # Localization (for future use)
 ```
 
 ### Key Classes
@@ -244,48 +246,6 @@ pdf-attestation-tool/
 - **PDF_Attestation_Upload**: Manages the upload form, file handling, and PDF blocking
 - **PDF_Attestation_Admin**: Creates the network admin dashboard for viewing records
 
-## Development Notes
-
-### Adding Comments to Code
-
-Every function, method, class, and significant code block includes extensive comments explaining:
-
-- What the code does
-- Why it does it
-- How to use it
-- Edge cases and gotchas
-
-This makes the code maintainable and easy to understand even months after it was written.
-
-### Extending the Plugin
-
-To modify or extend the plugin:
-
-1. Edit the relevant class file in `/includes/`
-2. Follow the existing comment style
-3. Use the helper functions in `functions-pdf-attestation.php`
-4. Test thoroughly on a staging environment first
-
-### Common Modifications
-
-**Change allowed roles for uploads**:
-- Edit `class-pdf-attestation-upload.php`
-- Modify the `current_user_can()` checks to use different capabilities
-
-**Change the attestation language**:
-- Edit `class-pdf-attestation-upload.php` in the `render_upload_form()` method
-- Look for the string "I attest that this PDF..."
-
-**Add additional audit fields**:
-- Modify the database table in `class-pdf-attestation-database.php`
-- Use the plugin's existing patterns for consistency
-
-## Performance Considerations
-
-- The plugin stores all attestations in a single network-wide table
-- Queries are indexed on frequently-searched columns (uid, blog_id, user_id, timestamp)
-- The admin dashboard uses pagination (default 100 records per page)
-- Large networks may want to periodically archive old records (advanced use)
 
 ## License
 
@@ -293,12 +253,8 @@ Licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformprojec
 
 This license permits free use for non-commercial purposes. Commercial use requires a separate commercial license.
 
-## Support and Feedback
-
-For questions, bug reports, or feature requests, contact your WordPress development team or the plugin maintainer.
-
 ---
 
 **Last Updated**: December 2025  
-**Version**: 0.8.3 
+**Version**: 0.8.3
 **Compatibility**: WordPress 5.0+ Multisite, PHP 7.2+
