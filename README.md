@@ -300,5 +300,5 @@ For questions, bug reports, or feature requests, contact your WordPress developm
 ---
 
 **Last Updated**: December 2025  
-**Version**: 1.0.0  
+**Version**: 0.8.3 
 **Compatibility**: WordPress 5.0+ Multisite, PHP 7.2+
