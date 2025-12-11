@@ -37,7 +37,7 @@ This prevents PDFs from being uploaded through the standard media library.
 ## Testing the Plugin
 
 ### Test 1: Upload a PDF to a site
-1. On any site, go to Tools → PDF Upload Tool
+1. On any site, go to Media → PDF Upload Tool
 2. Select a PDF file
 3. Try clicking "Upload PDF" WITHOUT checking the box
    - Should show error: "You must attest to the accessibility of this file before uploading"
@@ -88,7 +88,7 @@ This prevents PDFs from being uploaded through the standard media library.
 
 ### For Content Editors/Authors
 1. Before uploading a PDF, review it for accessibility (run accessibility checker)
-2. Go to Tools → PDF Upload Tool
+2. Go to Media → PDF Upload Tool
 3. Select the accessible PDF
 4. Check the attestation box confirming it meets WCAG standards
 5. Upload
