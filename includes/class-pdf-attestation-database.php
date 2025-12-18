@@ -77,22 +77,40 @@ class PDF_Attestation_Database {
 
 		$table_name = $wpdb->base_prefix . 'pdf_attestations';
 
-		// Check if table already exists
-		$table_exists = $wpdb->get_var(
-			$wpdb->prepare(
-				'SHOW TABLES LIKE %s',
-				$table_name
-			)
+		// Check if table already exists using wpdb->prepare with proper escaping
+		$check_query = $wpdb->prepare(
+			'SHOW TABLES LIKE %s',
+			$table_name
 		);
+		$table_exists = $wpdb->get_var( $check_query );
 
 		if ( ! empty( $table_exists ) ) {
+			// Table exists, but check if it needs the file_status column
+			$column_check = $wpdb->prepare(
+				'SHOW COLUMNS FROM ' . esc_sql( $table_name ) . ' LIKE %s',
+				'file_status'
+			);
+			$column_exists = $wpdb->get_results( $column_check );
+
+			// If file_status column doesn't exist, add it
+			if ( empty( $column_exists ) ) {
+				$add_column = $wpdb->prepare(
+					'ALTER TABLE ' . esc_sql( $table_name ) . ' ADD COLUMN file_status varchar(50) NOT NULL DEFAULT %s AFTER attestation_status',
+					'active'
+				);
+				$wpdb->query( $add_column );
+			}
+
 			return true; // Table already exists
 		}
 
 		// Table doesn't exist, create it
 		$charset_collate = $wpdb->get_charset_collate();
 
-		$sql = "CREATE TABLE IF NOT EXISTS {$table_name} (
+		// Use dbDelta for safe table creation with properly escaped table name
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		
+		$sql = 'CREATE TABLE ' . esc_sql( $table_name ) . " (
 			id bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY,
 			uid varchar(255) NOT NULL UNIQUE,
 			blog_id bigint(20) NOT NULL,
@@ -101,6 +119,7 @@ class PDF_Attestation_Database {
 			filename varchar(255) NOT NULL,
 			timestamp datetime NOT NULL,
 			attestation_status tinyint(1) NOT NULL DEFAULT 1,
+			file_status varchar(50) NOT NULL DEFAULT 'active',
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			KEY blog_id (blog_id),
 			KEY user_id (user_id),
@@ -108,15 +127,17 @@ class PDF_Attestation_Database {
 			KEY created_at (created_at)
 		) {$charset_collate};";
 
-		// Execute the query directly
-		$result = $wpdb->query( $sql );
+		// Use dbDelta for safe table creation
+		dbDelta( $sql );
 
-		// Check if table was created
-		if ( $result !== false ) {
-			return true;
-		}
+		// Verify table was created
+		$verify_query = $wpdb->prepare(
+			'SHOW TABLES LIKE %s',
+			$table_name
+		);
+		$table_check = $wpdb->get_var( $verify_query );
 
-		return false;
+		return ! empty( $table_check );
 	}
 
 	public static function create_table() {
@@ -272,8 +293,15 @@ class PDF_Attestation_Database {
 		}
 
 		// Add sorting - allow DESC or ASC, default to DESC
-		$order = 'DESC' === strtoupper( $args['order'] ) ? 'DESC' : 'ASC';
-		$query .= " ORDER BY {$args['orderby']} {$order}";
+		// Whitelist allowed orderby columns for security
+		$allowed_orderby = array( 'blog_id', 'username', 'timestamp', 'filename', 'user_id' );
+		if ( ! in_array( $args['orderby'], $allowed_orderby, true ) ) {
+			$args['orderby'] = 'timestamp';
+		}
+		
+		// Ensure $order is safe
+		$order = ( 'ASC' === strtoupper( $args['order'] ) ) ? 'ASC' : 'DESC';
+		$query .= ' ORDER BY ' . esc_sql( $args['orderby'] ) . ' ' . esc_sql( $order );
 
 		// Add pagination
 		$query .= $this->wpdb->prepare(
@@ -379,6 +407,40 @@ class PDF_Attestation_Database {
 
 		// Return true if UID was found, false if unique
 		return ! empty( $result );
+	}
+
+	/**
+	 * Update the file status for an attestation record
+	 *
+	 * Called when a PDF is deleted or replaced in the media library.
+	 * Updates the file_status column to track lifecycle.
+	 *
+	 * @param int    $attachment_id WordPress attachment ID
+	 * @param string $status         New status: 'active', 'deleted', or 'replaced'
+	 *
+	 * @return bool True if updated, false otherwise
+	 */
+	public function update_file_status( $attachment_id, $status = 'deleted' ) {
+		// Get the attachment post
+		$attachment = get_post( $attachment_id );
+
+		if ( ! $attachment || 'attachment' !== $attachment->post_type ) {
+			return false;
+		}
+
+		// Get the filename from the attachment
+		$filename = basename( get_attached_file( $attachment_id ) );
+
+		// Find attestation record with this filename
+		$result = $this->wpdb->update(
+			$this->table_name,
+			array( 'file_status' => sanitize_text_field( $status ) ),
+			array( 'filename' => $filename ),
+			array( '%s' ),
+			array( '%s' )
+		);
+
+		return $result !== false;
 	}
 
 	/**
