@@ -2,7 +2,9 @@
 /**
  * Plugin Name: PDF Attestation Tool
  * Description: Enforce mandatory accessibility attestation for all PDF uploads with permanent audit trail
- * Version: 1.0.0
+ * Version: 0.8.3
+ * Author: Kerri A. Hicks
+ * Author URI: https://github.com/kerri-hicks
  * License: PolyForm Noncommercial License 1.0.0
  * License URI: https://polyformproject.org/licenses/noncommercial/1.0.0/
  * Text Domain: pdf-attestation-tool
