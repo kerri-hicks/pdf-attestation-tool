@@ -1,11 +1,9 @@
 <?php
 /**
  * Plugin Name: PDF Attestation Tool
- * Plugin URI: https://example.com/pdf-attestation-tool
  * Description: Enforce mandatory accessibility attestation for all PDF uploads with permanent audit trail
  * Version: 1.0.0
- * Author: Providence College
- * Author URI: https://example.com
+ * Author URI: Kerri A. Hicks
  * License: PolyForm Noncommercial License 1.0.0
  * License URI: https://polyformproject.org/licenses/noncommercial/1.0.0/
  * Text Domain: pdf-attestation-tool
