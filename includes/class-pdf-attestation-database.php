@@ -86,19 +86,21 @@ class PDF_Attestation_Database {
 
 		if ( ! empty( $table_exists ) ) {
 			// Table exists, but check if it needs the file_status column
-			$column_check = $wpdb->prepare(
-				'SHOW COLUMNS FROM ' . esc_sql( $table_name ) . ' LIKE %s',
-				'file_status'
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					'SHOW COLUMNS FROM ' . esc_sql( $table_name ) . ' LIKE %s',
+					'file_status'
+				)
 			);
-			$column_exists = $wpdb->get_results( $column_check );
 
 			// If file_status column doesn't exist, add it
 			if ( empty( $column_exists ) ) {
-				$add_column = $wpdb->prepare(
-					'ALTER TABLE ' . esc_sql( $table_name ) . ' ADD COLUMN file_status varchar(50) NOT NULL DEFAULT %s AFTER attestation_status',
-					'active'
+				$wpdb->query(
+					$wpdb->prepare(
+						'ALTER TABLE ' . esc_sql( $table_name ) . ' ADD COLUMN file_status varchar(50) NOT NULL DEFAULT %s AFTER attestation_status',
+						'active'
+					)
 				);
-				$wpdb->query( $add_column );
 			}
 
 			return true; // Table already exists
@@ -131,11 +133,12 @@ class PDF_Attestation_Database {
 		dbDelta( $sql );
 
 		// Verify table was created
-		$verify_query = $wpdb->prepare(
-			'SHOW TABLES LIKE %s',
-			$table_name
+		$table_check = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$table_name
+			)
 		);
-		$table_check = $wpdb->get_var( $verify_query );
 
 		return ! empty( $table_check );
 	}
@@ -246,72 +249,62 @@ class PDF_Attestation_Database {
 			)
 		);
 
-		// Start building the SQL query
-		$query = "SELECT * FROM {$this->table_name} WHERE 1=1";
+		// Build a safe query using WHERE clauses as an array
+		$where_clauses = array( '1=1' );
+		$where_values  = array();
 
-		// Add filters to the query based on provided arguments
+		// Add search filter
 		if ( ! empty( $args['search'] ) ) {
-			// Search in filename and username columns
 			$search = '%' . $this->wpdb->esc_like( $args['search'] ) . '%';
-			$query  .= $this->wpdb->prepare(
-				' AND (filename LIKE %s OR username LIKE %s)',
-				$search,
-				$search
-			);
+			$where_clauses[] = '(filename LIKE %s OR username LIKE %s)';
+			$where_values[] = $search;
+			$where_values[] = $search;
 		}
 
+		// Add date from filter
 		if ( ! empty( $args['date_from'] ) ) {
-			// Filter records from a start date
-			$query .= $this->wpdb->prepare(
-				' AND DATE(timestamp) >= %s',
-				sanitize_text_field( $args['date_from'] )
-			);
+			$where_clauses[] = 'DATE(timestamp) >= %s';
+			$where_values[] = sanitize_text_field( $args['date_from'] );
 		}
 
+		// Add date to filter
 		if ( ! empty( $args['date_to'] ) ) {
-			// Filter records up to an end date
-			$query .= $this->wpdb->prepare(
-				' AND DATE(timestamp) <= %s',
-				sanitize_text_field( $args['date_to'] )
-			);
+			$where_clauses[] = 'DATE(timestamp) <= %s';
+			$where_values[] = sanitize_text_field( $args['date_to'] );
 		}
 
+		// Add blog filter
 		if ( ! empty( $args['blog_id'] ) ) {
-			// Filter records from a specific blog/site
-			$query .= $this->wpdb->prepare(
-				' AND blog_id = %d',
-				absint( $args['blog_id'] )
-			);
+			$where_clauses[] = 'blog_id = %d';
+			$where_values[] = absint( $args['blog_id'] );
 		}
 
+		// Add user filter
 		if ( ! empty( $args['user_id'] ) ) {
-			// Filter records from a specific user
-			$query .= $this->wpdb->prepare(
-				' AND user_id = %d',
-				absint( $args['user_id'] )
-			);
+			$where_clauses[] = 'user_id = %d';
+			$where_values[] = absint( $args['user_id'] );
 		}
 
-		// Add sorting - allow DESC or ASC, default to DESC
-		// Whitelist allowed orderby columns for security
+		// Build the WHERE clause
+		$where_sql = implode( ' AND ', $where_clauses );
+
+		// Validate and sanitize orderby
 		$allowed_orderby = array( 'blog_id', 'username', 'timestamp', 'filename', 'user_id' );
 		if ( ! in_array( $args['orderby'], $allowed_orderby, true ) ) {
 			$args['orderby'] = 'timestamp';
 		}
-		
-		// Ensure $order is safe
-		$order = ( 'ASC' === strtoupper( $args['order'] ) ) ? 'ASC' : 'DESC';
-		$query .= ' ORDER BY ' . esc_sql( $args['orderby'] ) . ' ' . esc_sql( $order );
 
-		// Add pagination
-		$query .= $this->wpdb->prepare(
-			' LIMIT %d OFFSET %d',
-			absint( $args['limit'] ),
-			absint( $args['offset'] )
+		// Validate order
+		$order = ( 'ASC' === strtoupper( $args['order'] ) ) ? 'ASC' : 'DESC';
+
+		// Build final query with proper escaping
+		$sql = $this->wpdb->prepare(
+			'SELECT * FROM ' . esc_sql( $this->table_name ) . ' WHERE ' . $where_sql . ' ORDER BY ' . esc_sql( $args['orderby'] ) . ' ' . esc_sql( $order ) . ' LIMIT %d OFFSET %d',
+			array_merge( $where_values, array( absint( $args['limit'] ), absint( $args['offset'] ) ) )
 		);
 
 		// Execute the query and return results
-		$results = $this->wpdb->get_results( $query );
+		$results = $this->wpdb->get_results( $sql );
 
 		return $results;
 	}
@@ -400,7 +393,7 @@ class PDF_Attestation_Database {
 		// Check if the UID is already in the database
 		$result = $this->wpdb->get_var(
 			$this->wpdb->prepare(
-				"SELECT id FROM {$this->table_name} WHERE uid = %s",
+				'SELECT id FROM ' . esc_sql( $this->table_name ) . ' WHERE uid = %s',
 				$uid
 			)
 		);

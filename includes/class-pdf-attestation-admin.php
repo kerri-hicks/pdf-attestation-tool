@@ -56,9 +56,12 @@ class PDF_Attestation_Admin {
 		global $wpdb;
 		$table_name = $wpdb->base_prefix . 'pdf_attestations';
 
-		// Get distinct blog IDs that have records - use esc_sql for table name
-		$query = 'SELECT DISTINCT blog_id FROM ' . esc_sql( $table_name ) . ' ORDER BY blog_id';
-		$blog_ids = $wpdb->get_col( $query );
+		// Get distinct blog IDs that have records using prepare directly
+		$blog_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				'SELECT DISTINCT blog_id FROM ' . esc_sql( $table_name ) . ' ORDER BY blog_id'
+			)
+		);
 
 		if ( empty( $blog_ids ) ) {
 			return array();
@@ -84,9 +87,12 @@ class PDF_Attestation_Admin {
 		global $wpdb;
 		$table_name = $wpdb->base_prefix . 'pdf_attestations';
 
-		// Get distinct user IDs that have records - use esc_sql for table name
-		$query = 'SELECT DISTINCT user_id FROM ' . esc_sql( $table_name ) . ' ORDER BY user_id';
-		$user_ids = $wpdb->get_col( $query );
+		// Get distinct user IDs that have records using prepare directly
+		$user_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				'SELECT DISTINCT user_id FROM ' . esc_sql( $table_name ) . ' ORDER BY user_id'
+			)
+		);
 
 		if ( empty( $user_ids ) ) {
 			return array();

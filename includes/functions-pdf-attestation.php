@@ -80,34 +80,6 @@ function pdf_attestation_format_timestamp( $timestamp ) {
 }
 
 /**
- * Log an event for debugging (optional)
- *
- * Creates debug log entries for troubleshooting if debugging is enabled.
- * Uses WordPress's error log functionality.
- *
- * @param string $message Message to log
- * @param string $level   Optional. Log level: 'error', 'warning', 'info'
- *
- * @return void
- */
-function pdf_attestation_log( $message, $level = 'info' ) {
-	// Only log if debugging is enabled in wp-config.php
-	if ( ! defined( 'WP_DEBUG_LOG' ) || ! WP_DEBUG_LOG ) {
-		return;
-	}
-
-	// Format the message
-	$log_message = sprintf(
-		'[PDF Attestation] [%s] %s',
-		strtoupper( $level ),
-		$message
-	);
-
-	// Use WordPress's error logging
-	error_log( $log_message );
-}
-
-/**
  * Get a clean blog name for UID generation
  *
  * Takes a blog name and sanitizes it for use in UIDs.
