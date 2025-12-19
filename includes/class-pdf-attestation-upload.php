@@ -56,6 +56,9 @@ class PDF_Attestation_Upload {
 
 		// Block PDFs via REST API uploads
 		add_filter( 'rest_pre_insert_attachment', array( $this, 'block_pdf_rest_uploads' ), 10, 2 );
+
+		// Track when PDFs are deleted from media library
+		add_action( 'delete_attachment', array( $this, 'track_pdf_deletion' ) );
 	}
 
 	/**
@@ -362,7 +365,7 @@ class PDF_Attestation_Upload {
 				),
 				admin_url( 'upload.php?page=pdf-attestation-upload' )
 			);
-			wp_redirect( $error_url );
+			wp_safe_redirect( $error_url );
 			exit;
 		}
 
@@ -376,7 +379,7 @@ class PDF_Attestation_Upload {
 				),
 				admin_url( 'upload.php?page=pdf-attestation-upload' )
 			);
-			wp_redirect( $error_url );
+			wp_safe_redirect( $error_url );
 			exit;
 		}
 
@@ -390,7 +393,7 @@ class PDF_Attestation_Upload {
 				),
 				admin_url( 'upload.php?page=pdf-attestation-upload' )
 			);
-			wp_redirect( $error_url );
+			wp_safe_redirect( $error_url );
 			exit;
 		}
 
@@ -415,7 +418,7 @@ class PDF_Attestation_Upload {
 				),
 				admin_url( 'upload.php?page=pdf-attestation-upload' )
 			);
-			wp_redirect( $error_url );
+			wp_safe_redirect( $error_url );
 			exit;
 		}
 
@@ -458,7 +461,7 @@ class PDF_Attestation_Upload {
 				),
 				admin_url( 'upload.php?page=pdf-attestation-upload' )
 			);
-			wp_redirect( $error_url );
+			wp_safe_redirect( $error_url );
 			exit;
 		}
 
@@ -482,7 +485,7 @@ class PDF_Attestation_Upload {
 
 		// Redirect to success page
 		$success_url = add_query_arg( 'pdf_upload_success', '1', admin_url( 'upload.php?page=pdf-attestation-upload' ) );
-		wp_redirect( $success_url );
+		wp_safe_redirect( $success_url );
 		exit;
 	}
 
@@ -724,5 +727,28 @@ class PDF_Attestation_Upload {
 		$mimes['pdf'] = 'application/pdf';
 
 		return $mimes;
+	}
+
+	/**
+	 * Track when a PDF is deleted from the media library
+	 *
+	 * When a PDF attachment is deleted, mark the corresponding attestation
+	 * record with a "deleted" status to maintain the audit trail.
+	 *
+	 * @param int $attachment_id The ID of the deleted attachment
+	 *
+	 * @return void
+	 */
+	public function track_pdf_deletion( $attachment_id ) {
+		// Get the attachment post
+		$attachment = get_post( $attachment_id );
+
+		// Only process if it's a PDF
+		if ( ! $attachment || 'application/pdf' !== $attachment->post_mime_type ) {
+			return;
+		}
+
+		// Mark the attestation record as deleted
+		$this->database->update_file_status( $attachment_id, 'deleted' );
 	}
 }

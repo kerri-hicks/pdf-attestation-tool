@@ -77,13 +77,12 @@ class PDF_Attestation_Database {
 
 		$table_name = $wpdb->base_prefix . 'pdf_attestations';
 
-		// Check if table already exists
-		$table_exists = $wpdb->get_var(
-			$wpdb->prepare(
-				'SHOW TABLES LIKE %s',
-				$table_name
-			)
+		// Check if table already exists using wpdb->prepare with proper escaping
+		$check_query = $wpdb->prepare(
+			'SHOW TABLES LIKE %s',
+			$table_name
 		);
+		$table_exists = $wpdb->get_var( $check_query );
 
 		if ( ! empty( $table_exists ) ) {
 			// Table exists, but check if it needs the file_status column
