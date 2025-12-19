@@ -309,7 +309,6 @@ class PDF_Attestation_Database {
 
 		return $results;
 	}
-	}
 
 	/**
 	 * Count total attestation records with optional filtering
