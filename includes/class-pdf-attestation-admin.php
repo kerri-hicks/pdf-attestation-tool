@@ -56,8 +56,12 @@ class PDF_Attestation_Admin {
 		global $wpdb;
 		$table_name = $wpdb->base_prefix . 'pdf_attestations';
 
-		// Get distinct blog IDs that have records
-		$blog_ids = $wpdb->get_col( "SELECT DISTINCT blog_id FROM {$table_name} ORDER BY blog_id" );
+		// Get distinct blog IDs that have records using prepare directly
+		$blog_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				'SELECT DISTINCT blog_id FROM ' . esc_sql( $table_name ) . ' ORDER BY blog_id'
+			)
+		);
 
 		if ( empty( $blog_ids ) ) {
 			return array();
@@ -83,8 +87,12 @@ class PDF_Attestation_Admin {
 		global $wpdb;
 		$table_name = $wpdb->base_prefix . 'pdf_attestations';
 
-		// Get distinct user IDs that have records
-		$user_ids = $wpdb->get_col( "SELECT DISTINCT user_id FROM {$table_name} ORDER BY user_id" );
+		// Get distinct user IDs that have records using prepare directly
+		$user_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				'SELECT DISTINCT user_id FROM ' . esc_sql( $table_name ) . ' ORDER BY user_id'
+			)
+		);
 
 		if ( empty( $user_ids ) ) {
 			return array();
@@ -393,7 +401,8 @@ class PDF_Attestation_Admin {
 								<?php esc_html_e( 'Upload Date', 'pdf-attestation-tool' ); echo esc_html( $date_indicator ); ?>
 							</a>
 						</th>
-						<th><?php esc_html_e( 'Status', 'pdf-attestation-tool' ); ?></th>
+						<th><?php esc_html_e( 'File Status', 'pdf-attestation-tool' ); ?></th>
+						<th><?php esc_html_e( 'Attestation', 'pdf-attestation-tool' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -409,12 +418,27 @@ class PDF_Attestation_Admin {
 
 							// Status display
 							$status = $record->attestation_status ? __( 'Attested', 'pdf-attestation-tool' ) : __( 'Not Attested', 'pdf-attestation-tool' );
+
+							// File status display with formatting
+							$file_status = isset( $record->file_status ) ? $record->file_status : 'active';
+							$file_status_display = ucfirst( $file_status );
 							?>
 							<tr>
 								<td><?php echo esc_html( $site_name ); ?></td>
 								<td><?php echo esc_html( $record->username ); ?></td>
 								<td><?php echo esc_html( $record->filename ); ?></td>
 								<td><?php echo esc_html( $upload_date ); ?></td>
+								<td><span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; 
+									<?php
+									if ( 'deleted' === $file_status ) {
+										echo 'background-color: #fee; color: #c00;';
+									} elseif ( 'replaced' === $file_status ) {
+										echo 'background-color: #ffd; color: #880;';
+									} else {
+										echo 'background-color: #efe; color: #080;';
+									}
+									?>
+									"><?php echo esc_html( $file_status_display ); ?></span></td>
 								<td><?php echo esc_html( $status ); ?></td>
 							</tr>
 							<?php
@@ -422,7 +446,7 @@ class PDF_Attestation_Admin {
 					} else {
 						?>
 						<tr>
-							<td colspan="5" style="text-align: center; padding: 20px;">
+							<td colspan="6" style="text-align: center; padding: 20px;">
 								<?php esc_html_e( 'No attestation records found.', 'pdf-attestation-tool' ); ?>
 							</td>
 						</tr>
