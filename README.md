@@ -198,7 +198,7 @@ This plugin helps with compliance by:
 
 ## Troubleshooting
 
-### "PDF uploads are not allowed through the standard media library"
+### PDF uploads are not allowed through the standard media library
 
 This is expected! PDFs must be uploaded using the PDF Upload Tool (Tools → PDF Upload Tool). This error appears if you try to upload a PDF through the regular media library.
 
@@ -253,6 +253,6 @@ This license permits free use for non-commercial purposes. Commercial use requir
 
 ---
 
-**Last Updated**: December 2025  
-**Version**: 1.0.0  
+**Last Updated**: March 2026 
+**Version**: 1.0.1  
 **Compatibility**: WordPress 5.0+ Multisite, PHP 7.2+
