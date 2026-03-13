@@ -4,7 +4,7 @@
  *
  * Contains utility functions used throughout the plugin for common operations.
  *
- * @package PDFAttestationTool
+ * @package PCPDFAttestationTool
  */
 
 // Prevent direct access
@@ -15,13 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Get a database instance for queries
  *
- * Helper function to get the PDF_Attestation_Database class instance.
+ * Helper function to get the PC_PDF_Attestation_Database class instance.
  * Useful for quick database operations throughout the plugin.
  *
- * @return PDF_Attestation_Database Database instance
+ * @return PC_PDF_Attestation_Database Database instance
  */
-function pdf_attestation_get_database() {
-	return new PDF_Attestation_Database();
+function pc_pdf_attestation_get_database() {
+	return new PC_PDF_Attestation_Database();
 }
 
 /**
@@ -32,7 +32,7 @@ function pdf_attestation_get_database() {
  *
  * @return bool True if plugin is ready, false otherwise
  */
-function pdf_attestation_is_ready() {
+function pc_pdf_attestation_is_ready() {
 	// Verify this is multisite
 	if ( ! is_multisite() ) {
 		return false;
@@ -40,7 +40,7 @@ function pdf_attestation_is_ready() {
 
 	// Check if database table exists
 	global $wpdb;
-	$table_name = $wpdb->base_prefix . 'pdf_attestations';
+	$table_name = $wpdb->base_prefix . 'pc_pdf_attestations';
 
 	$table_exists = $wpdb->get_var(
 		$wpdb->prepare(
@@ -61,8 +61,8 @@ function pdf_attestation_is_ready() {
  *
  * @return string Status text
  */
-function pdf_attestation_get_status_text( $status ) {
-	return $status ? __( 'Attested', 'pdf-attestation-tool' ) : __( 'Not Attested', 'pdf-attestation-tool' );
+function pc_pdf_attestation_get_status_text( $status ) {
+	return $status ? __( 'Attested', 'pc-pdf-attestation-tool' ) : __( 'Not Attested', 'pc-pdf-attestation-tool' );
 }
 
 /**
@@ -75,8 +75,36 @@ function pdf_attestation_get_status_text( $status ) {
  *
  * @return string Formatted date and time
  */
-function pdf_attestation_format_timestamp( $timestamp ) {
+function pc_pdf_attestation_format_timestamp( $timestamp ) {
 	return wp_date( 'M j, Y g:i a', strtotime( $timestamp ) );
+}
+
+/**
+ * Log an event for debugging (optional)
+ *
+ * Creates debug log entries for troubleshooting if debugging is enabled.
+ * Uses WordPress's error log functionality.
+ *
+ * @param string $message Message to log
+ * @param string $level   Optional. Log level: 'error', 'warning', 'info'
+ *
+ * @return void
+ */
+function pc_pdf_attestation_log( $message, $level = 'info' ) {
+	// Only log if debugging is enabled in wp-config.php
+	if ( ! defined( 'WP_DEBUG_LOG' ) || ! WP_DEBUG_LOG ) {
+		return;
+	}
+
+	// Format the message
+	$log_message = sprintf(
+		'[PDF Attestation] [%s] %s',
+		strtoupper( $level ),
+		$message
+	);
+
+	// Use WordPress's error logging
+	error_log( $log_message );
 }
 
 /**
@@ -88,7 +116,7 @@ function pdf_attestation_format_timestamp( $timestamp ) {
  *
  * @return string Sanitized blog name
  */
-function pdf_attestation_sanitize_blog_name( $blog_name ) {
+function pc_pdf_attestation_sanitize_blog_name( $blog_name ) {
 	// Lowercase
 	$sanitized = strtolower( $blog_name );
 
@@ -114,7 +142,7 @@ function pdf_attestation_sanitize_blog_name( $blog_name ) {
  *
  * @return array Array of blog/site objects
  */
-function pdf_attestation_get_blogs() {
+function pc_pdf_attestation_get_blogs() {
 	// Use get_sites() for WordPress 4.6+
 	return get_sites();
 }
@@ -126,7 +154,7 @@ function pdf_attestation_get_blogs() {
  *
  * @return string Blog name
  */
-function pdf_attestation_get_current_blog_name() {
+function pc_pdf_attestation_get_current_blog_name() {
 	return get_bloginfo( 'name' );
 }
 
@@ -139,7 +167,7 @@ function pdf_attestation_get_current_blog_name() {
  *
  * @return bool True if user can upload, false otherwise
  */
-function pdf_attestation_user_can_upload( $user_id = 0 ) {
+function pc_pdf_attestation_user_can_upload( $user_id = 0 ) {
 	if ( empty( $user_id ) ) {
 		$user_id = get_current_user_id();
 	}
@@ -154,8 +182,8 @@ function pdf_attestation_user_can_upload( $user_id = 0 ) {
  *
  * @return string URL to the upload tool
  */
-function pdf_attestation_get_upload_url() {
-	return admin_url( 'tools.php?page=pdf-attestation-upload' );
+function pc_pdf_attestation_get_upload_url() {
+	return admin_url( 'upload.php?page=pc-pdf-attestation-upload' );
 }
 
 /**
@@ -165,6 +193,6 @@ function pdf_attestation_get_upload_url() {
  *
  * @return string URL to attestation records page
  */
-function pdf_attestation_get_records_url() {
-	return network_admin_url( 'admin.php?page=pdf-attestation-records' );
+function pc_pdf_attestation_get_records_url() {
+	return network_admin_url( 'admin.php?page=pc-pdf-attestation-records' );
 }

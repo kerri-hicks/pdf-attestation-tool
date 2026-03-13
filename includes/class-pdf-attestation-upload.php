@@ -9,7 +9,7 @@
  * - Blocking PDFs from standard upload mechanisms
  * - Creating media library attachments for uploaded PDFs
  *
- * @package PDFAttestationTool
+ * @package PCPDFAttestationTool
  */
 
 // Prevent direct access
@@ -18,18 +18,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class PDF_Attestation_Upload
+ * Class PC_PDF_Attestation_Upload
  *
  * Handles the entire PDF upload workflow including form display, validation,
  * and integration with WordPress media library while blocking PDFs from
  * standard upload mechanisms.
  */
-class PDF_Attestation_Upload {
+class PC_PDF_Attestation_Upload {
 
 	/**
 	 * Database class instance for storing attestations
 	 *
-	 * @var PDF_Attestation_Database $database
+	 * @var PC_PDF_Attestation_Database $database
 	 */
 	protected $database;
 
@@ -43,7 +43,7 @@ class PDF_Attestation_Upload {
 	 */
 	public function __construct() {
 		// Initialize database class for storing attestation records
-		$this->database = new PDF_Attestation_Database();
+		$this->database = new PC_PDF_Attestation_Database();
 
 		// Register admin page for the upload form (displays on each site)
 		add_action( 'admin_menu', array( $this, 'register_upload_page' ) );
@@ -57,8 +57,8 @@ class PDF_Attestation_Upload {
 		// Block PDFs via REST API uploads
 		add_filter( 'rest_pre_insert_attachment', array( $this, 'block_pdf_rest_uploads' ), 10, 2 );
 
-		// Track when PDFs are deleted from media library
-		add_action( 'delete_attachment', array( $this, 'track_pdf_deletion' ) );
+		// Block PDFs uploaded via XMLRPC (wp_upload_bits bypasses wp_handle_upload_prefilter)
+		add_filter( 'wp_upload_bits', array( $this, 'block_pdf_upload_bits' ) );
 	}
 
 	/**
@@ -82,10 +82,10 @@ class PDF_Attestation_Upload {
 		// Capability: upload_files (same as media library upload)
 		add_submenu_page(
 			'upload.php',                                    // Parent menu slug (Media)
-			'PDF Attestation Upload',                        // Page title (browser tab)
-			'PDF Upload Tool',                               // Menu title
+			'PC PDF Attestation Upload',                        // Page title (browser tab)
+			'PC PDF Upload Tool',                               // Menu title
 			'upload_files',                                  // Capability required
-			'pdf-attestation-upload',                        // Page slug
+			'pc-pdf-attestation-upload',                        // Page slug
 			array( $this, 'render_upload_form' )             // Callback to render page
 		);
 	}
@@ -107,7 +107,7 @@ class PDF_Attestation_Upload {
 	public function render_upload_form() {
 		// Verify user has required capability
 		if ( ! current_user_can( 'upload_files' ) ) {
-			wp_die( esc_html__( 'You do not have permission to upload PDFs.', 'pdf-attestation-tool' ) );
+			wp_die( esc_html__( 'You do not have permission to upload PDFs.', 'pc-pdf-attestation-tool' ) );
 		}
 
 		// Get current blog info for display and UID generation
@@ -117,22 +117,113 @@ class PDF_Attestation_Upload {
 		// Start output buffering for the form
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'PDF Upload Tool', 'pdf-attestation-tool' ); ?></h1>
+			<h1><?php esc_html_e( 'PC PDF Upload Tool', 'pc-pdf-attestation-tool' ); ?></h1>
+
+			<style>
+				.pc-pdf-info-box {
+					background: #f6f7f7;
+					border: 1px solid #c3c4c7;
+					border-left: 4px solid #72777c;
+					border-radius: 4px;
+					padding: 14px 18px;
+					margin: 16px 0 20px 0;
+					max-width: 800px;
+				}
+				.pc-pdf-info-box h2 {
+					color: #1d2327;
+					font-size: 13px;
+					font-weight: 700;
+					margin: 0 0 10px 0;
+					padding: 0;
+					border: none;
+				}
+				.pc-pdf-info-box ul {
+					margin: 0;
+					padding: 0 0 0 18px;
+					list-style: disc;
+					font-size: 13px;
+					color: #3c3c3c;
+					line-height: 1.7;
+				}
+				.pc-pdf-form-box {
+					background: #fff;
+					border: 1px solid #ddd;
+					border-radius: 6px;
+					padding: 20px 24px;
+					max-width: 800px;
+					margin-bottom: 24px;
+				}
+				.pc-pdf-form-box h2 {
+					font-size: 15px;
+					font-weight: 600;
+					margin: 0 0 16px 0;
+					padding: 0 0 12px 0;
+					border-bottom: 1px solid #eee;
+					color: #1d2327;
+				}
+				.pc-pdf-attestation-block {
+					background: #fff5f5;
+					border: 2px solid #c0392b;
+					border-radius: 4px;
+					padding: 16px;
+					margin-top: 8px;
+				}
+				.pc-pdf-attestation-block p {
+					font-size: 13px;
+					font-weight: 600;
+					color: #1d2327;
+					margin: 0 0 12px 0;
+					line-height: 1.6;
+				}
+				.pc-pdf-attestation-block ul {
+					margin: 0 0 14px 18px;
+					padding: 0;
+					list-style: disc;
+					font-size: 13px;
+					font-weight: 600;
+					color: #1d2327;
+					line-height: 1.7;
+				}
+				.pc-pdf-checkbox-label {
+					display: flex;
+					gap: 10px;
+					align-items: flex-start;
+					font-size: 13px;
+					font-weight: 600;
+					color: #1d2327;
+					cursor: pointer;
+				}
+				.pc-pdf-checkbox-label input[type="checkbox"] {
+					width: 18px;
+					height: 18px;
+					margin-top: 1px;
+					flex-shrink: 0;
+					cursor: pointer;
+				}
+			</style>
 
 			<?php
 			// Display any success or error messages from form processing
-			if ( isset( $_GET['pdf_upload_success'] ) ) {
+			if ( isset( $_GET['pc_pdf_upload_success'] ) ) {
 				?>
 				<div class="notice notice-success is-dismissible">
 					<p>
-						<?php esc_html_e( 'PDF uploaded and attested successfully. The file is now available in the media library.', 'pdf-attestation-tool' ); ?>
+						<?php esc_html_e( 'PDF uploaded and attested successfully. The file is now available in the media library.', 'pc-pdf-attestation-tool' ); ?>
 					</p>
 				</div>
 				<?php
 			}
 
-			if ( isset( $_GET['pdf_upload_error'] ) ) {
-				$error_message = isset( $_GET['pdf_error_msg'] ) ? sanitize_text_field( wp_unslash( $_GET['pdf_error_msg'] ) ) : __( 'An error occurred during upload.', 'pdf-attestation-tool' );
+			if ( isset( $_GET['pc_pdf_upload_error'] ) ) {
+				$error_code = isset( $_GET['pc_pdf_error_code'] ) ? sanitize_key( $_GET['pc_pdf_error_code'] ) : '';
+				$error_messages = array(
+					'attestation_missing' => __( 'You must attest to the accessibility of this file before uploading.', 'pc-pdf-attestation-tool' ),
+					'no_file'             => __( 'Please select a PDF file to upload.', 'pc-pdf-attestation-tool' ),
+					'invalid_type'        => __( 'Only PDF files are allowed. Please select a valid PDF.', 'pc-pdf-attestation-tool' ),
+					'upload_failed'       => __( 'The file could not be uploaded. Please try again.', 'pc-pdf-attestation-tool' ),
+					'db_failed'           => __( 'Failed to create attestation record. Please contact support.', 'pc-pdf-attestation-tool' ),
+				);
+				$error_message = isset( $error_messages[ $error_code ] ) ? $error_messages[ $error_code ] : __( 'An error occurred during upload.', 'pc-pdf-attestation-tool' );
 				?>
 				<div class="notice notice-error is-dismissible">
 					<p><?php echo esc_html( $error_message ); ?></p>
@@ -141,100 +232,103 @@ class PDF_Attestation_Upload {
 			}
 			?>
 
-			<form method="post" enctype="multipart/form-data" id="pdf-attestation-form" class="pdf-attestation-form">
-				<?php
-				// WordPress nonce for CSRF protection
-				// This nonce is verified in handle_upload_form() before processing
-				wp_nonce_field( 'pdf_attestation_upload_nonce', 'pdf_attestation_nonce' );
-				?>
+			<!-- Informational Notice -->
+			<div class="pc-pdf-info-box">
+				<h2>&#128203; <?php esc_html_e( 'Please Read Before Uploading', 'pc-pdf-attestation-tool' ); ?></h2>
+				<ul>
+					<li><?php esc_html_e( 'The College does not support nor encourage the use of PDF files on providence.edu websites.', 'pc-pdf-attestation-tool' ); ?></li>
+					<li><?php esc_html_e( 'If you upload a PDF, the Web Services team will not be able to assist in making it accessible.', 'pc-pdf-attestation-tool' ); ?></li>
+					<li><?php esc_html_e( 'PDF files that are not accessible may put the College at risk of violating federal accessibility requirements, including the Americans with Disabilities Act (ADA) and Section 504 of the Rehabilitation Act.', 'pc-pdf-attestation-tool' ); ?></li>
+				</ul>
+			</div>
 
-				<table class="form-table" role="presentation">
-					<tbody>
-						<tr>
-							<th scope="row">
-								<label for="pdf-file"><?php esc_html_e( 'Select PDF File', 'pdf-attestation-tool' ); ?></label>
-							</th>
-							<td>
-								<input
-									type="file"
-									id="pdf-file"
-									name="pdf_file"
-									accept=".pdf"
-									required
-									aria-describedby="pdf-file-description"
-								/>
-								<p class="description" id="pdf-file-description">
-									<?php esc_html_e( 'Select a single PDF file for upload.', 'pdf-attestation-tool' ); ?>
-								</p>
-							</td>
-						</tr>
+			<!-- Upload Form -->
+			<div class="pc-pdf-form-box">
+				<h2><?php esc_html_e( 'Upload a PDF', 'pc-pdf-attestation-tool' ); ?></h2>
 
-						<tr>
-							<th scope="row">
-								<?php esc_html_e( 'Accessibility Attestation', 'pdf-attestation-tool' ); ?>
-							</th>
-							<td>
-								<div class="pdf-attestation-statement">
-									<p class="attestation-text">
+				<form method="post" enctype="multipart/form-data" id="pdf-attestation-form">
+					<?php
+					// WordPress nonce for CSRF protection
+					wp_nonce_field( 'pc_pdf_attestation_upload_nonce', 'pc_pdf_attestation_nonce' );
+					?>
+
+					<table class="form-table" role="presentation">
+						<tbody>
+							<tr>
+								<th scope="row">
+									<label for="pdf-file"><?php esc_html_e( 'Select PDF File', 'pc-pdf-attestation-tool' ); ?></label>
+								</th>
+								<td>
+									<input
+										type="file"
+										id="pdf-file"
+										name="pdf_file"
+										accept=".pdf"
+										required
+										aria-describedby="pdf-file-description"
+									/>
+									<p class="description" id="pdf-file-description">
+										<?php esc_html_e( 'Select a single PDF file for upload.', 'pc-pdf-attestation-tool' ); ?>
+									</p>
+								</td>
+							</tr>
+
+							<tr>
+								<th scope="row">
+									<?php esc_html_e( 'Uploading To', 'pc-pdf-attestation-tool' ); ?>
+								</th>
+								<td>
+									<p>
 										<?php
-										// Display the exact attestation language from the specification
-										esc_html_e(
-											'I attest that this PDF has been reviewed for accessibility and conforms to the current WCAG standards for PDF accessibility',
-											'pdf-attestation-tool'
-										);
+										/* translators: %s: The current site name */
+										printf( esc_html__( '%s', 'pc-pdf-attestation-tool' ), '<strong>' . esc_html( $blog_name ) . '</strong>' );
 										?>
 									</p>
+								</td>
+							</tr>
 
-									<label class="attestation-checkbox-label">
-										<input
-											type="checkbox"
-											id="pdf-attestation-checkbox"
-											name="pdf_attestation_checked"
-											value="1"
-											aria-describedby="attestation-help"
-										/>
-										<?php esc_html_e( 'I agree to the above attestation', 'pdf-attestation-tool' ); ?>
-									</label>
+							<tr>
+								<th scope="row">
+									<?php esc_html_e( 'Acknowledgment', 'pc-pdf-attestation-tool' ); ?>
+								</th>
+								<td>
+									<div class="pc-pdf-attestation-block">
+										<p id="attestation-help">
+											<?php esc_html_e( '&#9997;&#65039; By checking the box below, you confirm all of the following:', 'pc-pdf-attestation-tool' ); ?>
+										</p>
+										<ul>
+											<li><?php esc_html_e( 'You have personally reviewed this PDF for accessibility compliance.', 'pc-pdf-attestation-tool' ); ?></li>
+											<li><?php esc_html_e( 'This PDF conforms to current WCAG standards for PDF accessibility.', 'pc-pdf-attestation-tool' ); ?></li>
+											<li><?php esc_html_e( 'You understand that the College does not support PDF files and cannot assist with accessibility issues after upload.', 'pc-pdf-attestation-tool' ); ?></li>
+											<li><?php esc_html_e( 'You are personally responsible for ensuring this document meets all applicable accessibility requirements.', 'pc-pdf-attestation-tool' ); ?></li>
+										</ul>
+										<label class="pc-pdf-checkbox-label" for="pdf-attestation-checkbox">
+											<input
+												type="checkbox"
+												id="pdf-attestation-checkbox"
+												name="pc_pdf_attestation_checked"
+												value="1"
+												aria-describedby="attestation-help"
+											/>
+											<?php esc_html_e( 'I have read the above, I attest this PDF is accessible, and I am personally responsible for its compliance.', 'pc-pdf-attestation-tool' ); ?>
+										</label>
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 
-									<p class="description" id="attestation-help">
-										<?php
-										esc_html_e(
-											'You must check this box to confirm that you have reviewed this PDF for accessibility compliance before uploading.',
-											'pdf-attestation-tool'
-										);
-										?>
-									</p>
-								</div>
-							</td>
-						</tr>
-
-						<tr>
-							<th scope="row">
-								<?php esc_html_e( 'Current Site', 'pdf-attestation-tool' ); ?>
-							</th>
-							<td>
-								<p>
-									<?php
-									/* translators: %s: The current site name */
-									printf( esc_html__( 'This PDF will be uploaded to: %s', 'pdf-attestation-tool' ), '<strong>' . esc_html( $blog_name ) . '</strong>' );
-									?>
-								</p>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<?php
-				// Submit button
-				submit_button(
-					__( 'Upload PDF', 'pdf-attestation-tool' ),
-					'primary',
-					'submit',
-					true,
-					array( 'id' => 'pdf-upload-button' )
-				);
-				?>
-			</form>
+					<?php
+					submit_button(
+						__( 'Upload PDF', 'pc-pdf-attestation-tool' ),
+						'primary',
+						'submit',
+						true,
+						array( 'id' => 'pdf-upload-button' )
+					);
+					?>
+				</form>
+			</div>
 
 			<?php
 			// Display recent uploads from current user on this site
@@ -259,7 +353,7 @@ class PDF_Attestation_Upload {
 	 */
 	protected function enqueue_upload_scripts() {
 		// Get the current page to only enqueue on the upload form
-		if ( ! isset( $_GET['page'] ) || 'pdf-attestation-upload' !== $_GET['page'] ) {
+		if ( ! isset( $_GET['page'] ) || 'pc-pdf-attestation-upload' !== $_GET['page'] ) {
 			return;
 		}
 
@@ -282,7 +376,7 @@ class PDF_Attestation_Upload {
 				// Check if file is selected
 				if ( ! fileInput.files || fileInput.files.length === 0 ) {
 					e.preventDefault();
-					alert( '" . esc_js( __( 'Please select a PDF file to upload.', 'pdf-attestation-tool' ) ) . "' );
+					alert( '" . esc_js( __( 'Please select a PDF file to upload.', 'pc-pdf-attestation-tool' ) ) . "' );
 					fileInput.focus();
 					return false;
 				}
@@ -290,14 +384,14 @@ class PDF_Attestation_Upload {
 				// Check if only one file is selected
 				if ( fileInput.files.length > 1 ) {
 					e.preventDefault();
-					alert( '" . esc_js( __( 'You can only upload one PDF at a time. Please select a single file and try again.', 'pdf-attestation-tool' ) ) . "' );
+					alert( '" . esc_js( __( 'You can only upload one PDF at a time. Please select a single file and try again.', 'pc-pdf-attestation-tool' ) ) . "' );
 					return false;
 				}
 
 				// Check if attestation checkbox is checked
 				if ( ! checkbox.checked ) {
 					e.preventDefault();
-					alert( '" . esc_js( __( 'You must attest to the accessibility of this file before uploading.', 'pdf-attestation-tool' ) ) . "' );
+					alert( '" . esc_js( __( 'You must attest to the accessibility of this file before uploading.', 'pc-pdf-attestation-tool' ) ) . "' );
 					checkbox.focus();
 					return false;
 				}
@@ -311,12 +405,11 @@ class PDF_Attestation_Upload {
 		})();
 		";
 
-		// Output the inline JavaScript
-		// Using wp_add_inline_script would require enqueueing a handle first
-		// So we output directly in a script tag
-		echo '<script type="text/javascript">';
-		echo wp_kses( $js_code, false );
-		echo '</script>';
+		// Register a minimal handle so wp_add_inline_script() has something to attach to,
+		// then enqueue it so WordPress outputs the script tag correctly.
+		wp_register_script( 'pc-pdf-attestation-upload', false, array(), false, true );
+		wp_enqueue_script( 'pc-pdf-attestation-upload' );
+		wp_add_inline_script( 'pc-pdf-attestation-upload', $js_code );
 	}
 
 	/**
@@ -335,7 +428,7 @@ class PDF_Attestation_Upload {
 	 */
 	public function handle_upload_form() {
 		// Only process if on the upload page
-		if ( ! isset( $_GET['page'] ) || 'pdf-attestation-upload' !== $_GET['page'] ) {
+		if ( ! isset( $_GET['page'] ) || 'pc-pdf-attestation-upload' !== $_GET['page'] ) {
 			return;
 		}
 
@@ -345,41 +438,39 @@ class PDF_Attestation_Upload {
 		}
 
 		// Verify the nonce for CSRF protection
-		if ( ! isset( $_POST['pdf_attestation_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pdf_attestation_nonce'] ) ), 'pdf_attestation_upload_nonce' ) ) {
-			wp_safe_remote_post( add_query_arg( 'pdf_upload_error', '1', admin_url( 'upload.php?page=pdf-attestation-upload' ) ) );
-			wp_die( esc_html__( 'Security check failed. Please try again.', 'pdf-attestation-tool' ) );
+		if ( ! isset( $_POST['pc_pdf_attestation_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pc_pdf_attestation_nonce'] ) ), 'pc_pdf_attestation_upload_nonce' ) ) {
+			wp_safe_redirect( add_query_arg( 'pc_pdf_upload_error', '1', admin_url( 'upload.php?page=pc-pdf-attestation-upload' ) ) );
+			exit;
 		}
 
 		// Verify user has capability to upload files
 		if ( ! current_user_can( 'upload_files' ) ) {
-			wp_die( esc_html__( 'You do not have permission to upload PDFs.', 'pdf-attestation-tool' ) );
+			wp_die( esc_html__( 'You do not have permission to upload PDFs.', 'pc-pdf-attestation-tool' ) );
 		}
 
 		// Check if attestation checkbox was checked
-		if ( ! isset( $_POST['pdf_attestation_checked'] ) || '1' !== $_POST['pdf_attestation_checked'] ) {
-			// Redirect back to form with error message
+		if ( ! isset( $_POST['pc_pdf_attestation_checked'] ) || '1' !== $_POST['pc_pdf_attestation_checked'] ) {
 			$error_url = add_query_arg(
 				array(
-					'pdf_upload_error' => '1',
-					'pdf_error_msg'    => urlencode( __( 'You must attest to the accessibility of this file before uploading.', 'pdf-attestation-tool' ) ),
+					'pc_pdf_upload_error' => '1',
+					'pc_pdf_error_code'   => 'attestation_missing',
 				),
-				admin_url( 'upload.php?page=pdf-attestation-upload' )
+				admin_url( 'upload.php?page=pc-pdf-attestation-upload' )
 			);
-			wp_safe_redirect( $error_url );
+			wp_redirect( $error_url );
 			exit;
 		}
 
 		// Check if a file was uploaded
 		if ( ! isset( $_FILES['pdf_file'] ) || empty( $_FILES['pdf_file']['tmp_name'] ) ) {
-			// Redirect back with error
 			$error_url = add_query_arg(
 				array(
-					'pdf_upload_error' => '1',
-					'pdf_error_msg'    => urlencode( __( 'Please select a PDF file to upload.', 'pdf-attestation-tool' ) ),
+					'pc_pdf_upload_error' => '1',
+					'pc_pdf_error_code'   => 'no_file',
 				),
-				admin_url( 'upload.php?page=pdf-attestation-upload' )
+				admin_url( 'upload.php?page=pc-pdf-attestation-upload' )
 			);
-			wp_safe_redirect( $error_url );
+			wp_redirect( $error_url );
 			exit;
 		}
 
@@ -388,12 +479,12 @@ class PDF_Attestation_Upload {
 		if ( 'application/pdf' !== $file_type['type'] && 'application/x-pdf' !== $file_type['type'] ) {
 			$error_url = add_query_arg(
 				array(
-					'pdf_upload_error' => '1',
-					'pdf_error_msg'    => urlencode( __( 'Only PDF files are allowed. Please select a valid PDF.', 'pdf-attestation-tool' ) ),
+					'pc_pdf_upload_error' => '1',
+					'pc_pdf_error_code'   => 'invalid_type',
 				),
-				admin_url( 'upload.php?page=pdf-attestation-upload' )
+				admin_url( 'upload.php?page=pc-pdf-attestation-upload' )
 			);
-			wp_safe_redirect( $error_url );
+			wp_redirect( $error_url );
 			exit;
 		}
 
@@ -413,12 +504,12 @@ class PDF_Attestation_Upload {
 		if ( isset( $uploaded_file['error'] ) ) {
 			$error_url = add_query_arg(
 				array(
-					'pdf_upload_error' => '1',
-					'pdf_error_msg'    => urlencode( $uploaded_file['error'] ),
+					'pc_pdf_upload_error' => '1',
+					'pc_pdf_error_code'   => 'upload_failed',
 				),
-				admin_url( 'upload.php?page=pdf-attestation-upload' )
+				admin_url( 'upload.php?page=pc-pdf-attestation-upload' )
 			);
-			wp_safe_redirect( $error_url );
+			wp_redirect( $error_url );
 			exit;
 		}
 
@@ -456,12 +547,12 @@ class PDF_Attestation_Upload {
 
 			$error_url = add_query_arg(
 				array(
-					'pdf_upload_error' => '1',
-					'pdf_error_msg'    => urlencode( __( 'Failed to create attestation record. Please contact support.', 'pdf-attestation-tool' ) ),
+					'pc_pdf_upload_error' => '1',
+					'pc_pdf_error_code'   => 'db_failed',
 				),
-				admin_url( 'upload.php?page=pdf-attestation-upload' )
+				admin_url( 'upload.php?page=pc-pdf-attestation-upload' )
 			);
-			wp_safe_redirect( $error_url );
+			wp_redirect( $error_url );
 			exit;
 		}
 
@@ -484,8 +575,8 @@ class PDF_Attestation_Upload {
 		wp_update_attachment_metadata( $attachment_id, $attach_data );
 
 		// Redirect to success page
-		$success_url = add_query_arg( 'pdf_upload_success', '1', admin_url( 'upload.php?page=pdf-attestation-upload' ) );
-		wp_safe_redirect( $success_url );
+		$success_url = add_query_arg( 'pc_pdf_upload_success', '1', admin_url( 'upload.php?page=pc-pdf-attestation-upload' ) );
+		wp_redirect( $success_url );
 		exit;
 	}
 
@@ -575,7 +666,7 @@ class PDF_Attestation_Upload {
 	 */
 	protected function display_recent_uploads() {
 		// Get database and query recent uploads by current user
-		$database = new PDF_Attestation_Database();
+		$database = new PC_PDF_Attestation_Database();
 		$user_id  = get_current_user_id();
 		$blog_id  = get_current_blog_id();
 
@@ -597,16 +688,16 @@ class PDF_Attestation_Upload {
 		// Display a table of recent uploads
 		?>
 		<div class="pdf-recent-uploads" style="margin-top: 40px;">
-			<h2><?php esc_html_e( 'Your Recent PDF Uploads', 'pdf-attestation-tool' ); ?></h2>
+			<h2><?php esc_html_e( 'Your Recent PDF Uploads', 'pc-pdf-attestation-tool' ); ?></h2>
 
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
-						<th><?php esc_html_e( 'Filename', 'pdf-attestation-tool' ); ?></th>
-						<th><?php esc_html_e( 'Site', 'pdf-attestation-tool' ); ?></th>
-						<th><?php esc_html_e( 'Uploaded By', 'pdf-attestation-tool' ); ?></th>
-						<th><?php esc_html_e( 'Upload Date', 'pdf-attestation-tool' ); ?></th>
-						<th><?php esc_html_e( 'Status', 'pdf-attestation-tool' ); ?></th>
+						<th><?php esc_html_e( 'Filename', 'pc-pdf-attestation-tool' ); ?></th>
+						<th><?php esc_html_e( 'Site', 'pc-pdf-attestation-tool' ); ?></th>
+						<th><?php esc_html_e( 'Uploaded By', 'pc-pdf-attestation-tool' ); ?></th>
+						<th><?php esc_html_e( 'Upload Date', 'pc-pdf-attestation-tool' ); ?></th>
+						<th><?php esc_html_e( 'Status', 'pc-pdf-attestation-tool' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -623,7 +714,7 @@ class PDF_Attestation_Upload {
 						$upload_date = wp_date( 'M j, Y g:i a', strtotime( $record->timestamp ) );
 
 						// Determine status display
-						$status = $record->attestation_status ? __( 'Attested', 'pdf-attestation-tool' ) : __( 'Not Attested', 'pdf-attestation-tool' );
+						$status = $record->attestation_status ? __( 'Attested', 'pc-pdf-attestation-tool' ) : __( 'Not Attested', 'pc-pdf-attestation-tool' );
 						?>
 						<tr>
 							<td><?php echo esc_html( $record->filename ); ?></td>
@@ -665,16 +756,16 @@ class PDF_Attestation_Upload {
 		$is_from_attestation_tool = false;
 
 		// Check for nonce in POST data
-		if ( isset( $_POST['pdf_attestation_nonce'] ) ) {
-			$nonce = sanitize_text_field( wp_unslash( $_POST['pdf_attestation_nonce'] ) );
-			if ( wp_verify_nonce( $nonce, 'pdf_attestation_upload_nonce' ) ) {
+		if ( isset( $_POST['pc_pdf_attestation_nonce'] ) ) {
+			$nonce = sanitize_text_field( wp_unslash( $_POST['pc_pdf_attestation_nonce'] ) );
+			if ( wp_verify_nonce( $nonce, 'pc_pdf_attestation_upload_nonce' ) ) {
 				$is_from_attestation_tool = true;
 			}
 		}
 
 		// If this PDF is not from the attestation tool, block it
 		if ( ! $is_from_attestation_tool ) {
-			$file['error'] = __( 'PDF uploads are not allowed through the standard media library. Please use the PDF Upload Tool to upload PDFs.', 'pdf-attestation-tool' );
+			$file['error'] = __( 'PDF uploads are not allowed through the standard media library. Please use the PDF Upload Tool to upload PDFs.', 'pc-pdf-attestation-tool' );
 		}
 
 		return $file;
@@ -704,11 +795,32 @@ class PDF_Attestation_Upload {
 		if ( 'application/pdf' === $mime_type || 'application/x-pdf' === $mime_type ) {
 			return new WP_Error(
 				'pdf_blocked',
-				__( 'PDF uploads are not allowed through the REST API. Please use the PDF Upload Tool.', 'pdf-attestation-tool' )
+				__( 'PDF uploads are not allowed through the REST API. Please use the PDF Upload Tool.', 'pc-pdf-attestation-tool' )
 			);
 		}
 
 		return $prepared_attachment;
+	}
+
+	/**
+	 * Block PDF uploads via wp_upload_bits() (used by XMLRPC)
+	 *
+	 * wp_upload_bits() is used by the XMLRPC media upload path and does not
+	 * trigger wp_handle_upload_prefilter. Returning a non-array from this
+	 * filter causes WordPress to treat the value as an error string and abort.
+	 *
+	 * @param array $upload_data Array containing 'name', 'bits', and 'time' keys
+	 *
+	 * @return array|string Original array to allow upload, or error string to block
+	 */
+	public function block_pdf_upload_bits( $upload_data ) {
+		$file_type = wp_check_filetype( $upload_data['name'] );
+
+		if ( 'application/pdf' === $file_type['type'] || 'application/x-pdf' === $file_type['type'] ) {
+			return __( 'PDF uploads are not allowed through this method. Please use the PDF Upload Tool.', 'pc-pdf-attestation-tool' );
+		}
+
+		return $upload_data;
 	}
 
 	/**
@@ -727,28 +839,5 @@ class PDF_Attestation_Upload {
 		$mimes['pdf'] = 'application/pdf';
 
 		return $mimes;
-	}
-
-	/**
-	 * Track when a PDF is deleted from the media library
-	 *
-	 * When a PDF attachment is deleted, mark the corresponding attestation
-	 * record with a "deleted" status to maintain the audit trail.
-	 *
-	 * @param int $attachment_id The ID of the deleted attachment
-	 *
-	 * @return void
-	 */
-	public function track_pdf_deletion( $attachment_id ) {
-		// Get the attachment post
-		$attachment = get_post( $attachment_id );
-
-		// Only process if it's a PDF
-		if ( ! $attachment || 'application/pdf' !== $attachment->post_mime_type ) {
-			return;
-		}
-
-		// Mark the attestation record as deleted
-		$this->database->update_file_status( $attachment_id, 'deleted' );
 	}
 }

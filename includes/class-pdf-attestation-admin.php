@@ -8,7 +8,7 @@
  * - Exports data for compliance auditing
  * - Manages pagination for large datasets
  *
- * @package PDFAttestationTool
+ * @package PCPDFAttestationTool
  */
 
 // Prevent direct access
@@ -17,17 +17,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class PDF_Attestation_Admin
+ * Class PC_PDF_Attestation_Admin
  *
  * Creates a network admin page for viewing attestation records across all sites
  * in the WordPress multisite network. Only accessible from Network Admin dashboard.
  */
-class PDF_Attestation_Admin {
+class PC_PDF_Attestation_Admin {
 
 	/**
 	 * Database class instance
 	 *
-	 * @var PDF_Attestation_Database $database
+	 * @var PC_PDF_Attestation_Database $database
 	 */
 	protected $database;
 
@@ -38,7 +38,7 @@ class PDF_Attestation_Admin {
 	 */
 	public function __construct() {
 		// Initialize database class for queries
-		$this->database = new PDF_Attestation_Database();
+		$this->database = new PC_PDF_Attestation_Database();
 
 		// Register the network admin page
 		add_action( 'network_admin_menu', array( $this, 'register_network_admin_page' ) );
@@ -54,14 +54,10 @@ class PDF_Attestation_Admin {
 	 */
 	protected function get_sites_with_pdfs() {
 		global $wpdb;
-		$table_name = $wpdb->base_prefix . 'pdf_attestations';
+		$table_name = $wpdb->base_prefix . 'pc_pdf_attestations';
 
-		// Get distinct blog IDs that have records using prepare directly
-		$blog_ids = $wpdb->get_col(
-			$wpdb->prepare(
-				'SELECT DISTINCT blog_id FROM ' . esc_sql( $table_name ) . ' ORDER BY blog_id'
-			)
-		);
+		// Get distinct blog IDs that have records
+		$blog_ids = $wpdb->get_col( "SELECT DISTINCT blog_id FROM {$table_name} ORDER BY blog_id" );
 
 		if ( empty( $blog_ids ) ) {
 			return array();
@@ -85,14 +81,10 @@ class PDF_Attestation_Admin {
 	 */
 	protected function get_users_with_pdfs() {
 		global $wpdb;
-		$table_name = $wpdb->base_prefix . 'pdf_attestations';
+		$table_name = $wpdb->base_prefix . 'pc_pdf_attestations';
 
-		// Get distinct user IDs that have records using prepare directly
-		$user_ids = $wpdb->get_col(
-			$wpdb->prepare(
-				'SELECT DISTINCT user_id FROM ' . esc_sql( $table_name ) . ' ORDER BY user_id'
-			)
-		);
+		// Get distinct user IDs that have records
+		$user_ids = $wpdb->get_col( "SELECT DISTINCT user_id FROM {$table_name} ORDER BY user_id" );
 
 		if ( empty( $user_ids ) ) {
 			return array();
@@ -125,10 +117,10 @@ class PDF_Attestation_Admin {
 
 		// Add a top-level menu item in Network Admin
 		add_menu_page(
-			'PDF Attestation Records',                       // Page title
-			'PDF Attestations',                              // Menu title
+			'PC PDF Attestation Records',                       // Page title
+			'PC PDF Attestations',                              // Menu title
 			'manage_network',                                // Capability required
-			'pdf-attestation-records',                       // Menu slug
+			'pc-pdf-attestation-records',                       // Menu slug
 			array( $this, 'render_attestation_page' ),       // Callback
 			'dashicons-clipboard',                           // Icon
 			25                                               // Position in menu
@@ -147,7 +139,7 @@ class PDF_Attestation_Admin {
 	public function render_attestation_page() {
 		// Verify user capability
 		if ( ! current_user_can( 'manage_network' ) ) {
-			wp_die( esc_html__( 'You do not have permission to view attestation records.', 'pdf-attestation-tool' ) );
+			wp_die( esc_html__( 'You do not have permission to view attestation records.', 'pc-pdf-attestation-tool' ) );
 		}
 
 		// Get query parameters for filtering and pagination
@@ -207,14 +199,14 @@ class PDF_Attestation_Admin {
 		// Render the page
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'PDF Attestation Records', 'pdf-attestation-tool' ); ?></h1>
+			<h1><?php esc_html_e( 'PC PDF Attestation Records', 'pc-pdf-attestation-tool' ); ?></h1>
 
 			<?php
 			// Display success message if export completed
-			if ( isset( $_GET['pdf_export_success'] ) ) {
+			if ( isset( $_GET['pc_pdf_export_success'] ) ) {
 				?>
 				<div class="notice notice-success is-dismissible">
-					<p><?php esc_html_e( 'Attestation records have been exported successfully.', 'pdf-attestation-tool' ); ?></p>
+					<p><?php esc_html_e( 'Attestation records have been exported successfully.', 'pc-pdf-attestation-tool' ); ?></p>
 				</div>
 				<?php
 			}
@@ -235,12 +227,12 @@ class PDF_Attestation_Admin {
 					<div class="filter-row">
 						<!-- Search input -->
 						<div class="filter-group">
-							<label for="search"><?php esc_html_e( 'Search', 'pdf-attestation-tool' ); ?></label>
+							<label for="search"><?php esc_html_e( 'Search', 'pc-pdf-attestation-tool' ); ?></label>
 							<input
 								type="text"
 								id="search"
 								name="search"
-								placeholder="<?php esc_attr_e( 'Filename or username', 'pdf-attestation-tool' ); ?>"
+								placeholder="<?php esc_attr_e( 'Filename or username', 'pc-pdf-attestation-tool' ); ?>"
 								value="<?php echo esc_attr( $search ); ?>"
 								style="width: 200px;"
 							/>
@@ -248,7 +240,7 @@ class PDF_Attestation_Admin {
 
 						<!-- Date from input -->
 						<div class="filter-group">
-							<label for="date_from"><?php esc_html_e( 'From Date', 'pdf-attestation-tool' ); ?></label>
+							<label for="date_from"><?php esc_html_e( 'From Date', 'pc-pdf-attestation-tool' ); ?></label>
 							<input
 								type="date"
 								id="date_from"
@@ -260,7 +252,7 @@ class PDF_Attestation_Admin {
 
 						<!-- Date to input -->
 						<div class="filter-group">
-							<label for="date_to"><?php esc_html_e( 'To Date', 'pdf-attestation-tool' ); ?></label>
+							<label for="date_to"><?php esc_html_e( 'To Date', 'pc-pdf-attestation-tool' ); ?></label>
 							<input
 								type="date"
 								id="date_to"
@@ -274,9 +266,9 @@ class PDF_Attestation_Admin {
 					<div class="filter-row">
 						<!-- Blog/Site filter -->
 						<div class="filter-group">
-							<label for="blog_id"><?php esc_html_e( 'Site', 'pdf-attestation-tool' ); ?></label>
+							<label for="blog_id"><?php esc_html_e( 'Site', 'pc-pdf-attestation-tool' ); ?></label>
 							<select id="blog_id" name="blog_id" style="width: 200px;">
-								<option value="0"><?php esc_html_e( 'All Sites', 'pdf-attestation-tool' ); ?></option>
+								<option value="0"><?php esc_html_e( 'All Sites', 'pc-pdf-attestation-tool' ); ?></option>
 								<?php
 								foreach ( $sites as $site ) {
 									?>
@@ -291,9 +283,9 @@ class PDF_Attestation_Admin {
 
 						<!-- User filter -->
 						<div class="filter-group">
-							<label for="user_id"><?php esc_html_e( 'User', 'pdf-attestation-tool' ); ?></label>
+							<label for="user_id"><?php esc_html_e( 'User', 'pc-pdf-attestation-tool' ); ?></label>
 							<select id="user_id" name="user_id" style="width: 200px;">
-								<option value="0"><?php esc_html_e( 'All Users', 'pdf-attestation-tool' ); ?></option>
+								<option value="0"><?php esc_html_e( 'All Users', 'pc-pdf-attestation-tool' ); ?></option>
 								<?php
 								foreach ( $users as $user ) {
 									?>
@@ -308,7 +300,7 @@ class PDF_Attestation_Admin {
 
 						<!-- Records per page -->
 						<div class="filter-group">
-							<label for="per_page"><?php esc_html_e( 'Records per page', 'pdf-attestation-tool' ); ?></label>
+							<label for="per_page"><?php esc_html_e( 'Records per page', 'pc-pdf-attestation-tool' ); ?></label>
 							<select id="per_page" name="per_page" style="width: 150px;">
 								<option value="100" <?php selected( $per_page, 100 ); ?>>100</option>
 								<option value="500" <?php selected( $per_page, 500 ); ?>>500</option>
@@ -318,14 +310,14 @@ class PDF_Attestation_Admin {
 					</div>
 
 					<div class="filter-buttons">
-						<?php submit_button( __( 'Filter', 'pdf-attestation-tool' ), 'primary', 'filter', false ); ?>
-						<a href="<?php echo esc_url( admin_url( 'network/admin.php?page=pdf-attestation-records' ) ); ?>" class="button">
-							<?php esc_html_e( 'Reset', 'pdf-attestation-tool' ); ?>
+						<?php submit_button( __( 'Filter', 'pc-pdf-attestation-tool' ), 'primary', 'filter', false ); ?>
+						<a href="<?php echo esc_url( admin_url( 'network/admin.php?page=pc-pdf-attestation-records' ) ); ?>" class="button">
+							<?php esc_html_e( 'Reset', 'pc-pdf-attestation-tool' ); ?>
 						</a>
 
 						<!-- CSV Export button -->
 						<form method="post" style="display: inline;">
-							<?php wp_nonce_field( 'pdf_attestation_export_nonce', 'export_nonce' ); ?>
+							<?php wp_nonce_field( 'pc_pdf_attestation_export_nonce', 'export_nonce' ); ?>
 							<input type="hidden" name="pdf_export_csv" value="1" />
 							<?php
 							// Pass current filters to export
@@ -337,7 +329,7 @@ class PDF_Attestation_Admin {
 								}
 							}
 							?>
-							<?php submit_button( __( 'Export CSV', 'pdf-attestation-tool' ), 'secondary', 'submit', false ); ?>
+							<?php submit_button( __( 'Export CSV', 'pc-pdf-attestation-tool' ), 'secondary', 'submit', false ); ?>
 						</form>
 					</div>
 				</form>
@@ -347,7 +339,7 @@ class PDF_Attestation_Admin {
 			<p class="description">
 				<?php
 				/* translators: %d: Total number of records */
-				printf( esc_html__( 'Total records: %d', 'pdf-attestation-tool' ), intval( $total_records ) );
+				printf( esc_html__( 'Total records: %d', 'pc-pdf-attestation-tool' ), intval( $total_records ) );
 				?>
 			</p>
 
@@ -367,7 +359,7 @@ class PDF_Attestation_Admin {
 							$site_indicator = ( 'blog_id' === $orderby ) ? ( 'ASC' === $order ? ' ▲' : ' ▼' ) : '';
 							?>
 							<a href="<?php echo esc_url( $site_sort_url ); ?>">
-								<?php esc_html_e( 'Site', 'pdf-attestation-tool' ); echo esc_html( $site_indicator ); ?>
+								<?php esc_html_e( 'Site', 'pc-pdf-attestation-tool' ); echo esc_html( $site_indicator ); ?>
 							</a>
 						</th>
 						<th>
@@ -382,10 +374,10 @@ class PDF_Attestation_Admin {
 							$username_indicator = ( 'username' === $orderby ) ? ( 'ASC' === $order ? ' ▲' : ' ▼' ) : '';
 							?>
 							<a href="<?php echo esc_url( $username_sort_url ); ?>">
-								<?php esc_html_e( 'Username', 'pdf-attestation-tool' ); echo esc_html( $username_indicator ); ?>
+								<?php esc_html_e( 'Username', 'pc-pdf-attestation-tool' ); echo esc_html( $username_indicator ); ?>
 							</a>
 						</th>
-						<th><?php esc_html_e( 'Filename', 'pdf-attestation-tool' ); ?></th>
+						<th><?php esc_html_e( 'Filename', 'pc-pdf-attestation-tool' ); ?></th>
 						<th>
 							<?php
 							// Create sortable link for Upload Date column
@@ -398,11 +390,10 @@ class PDF_Attestation_Admin {
 							$date_indicator = ( 'timestamp' === $orderby ) ? ( 'ASC' === $order ? ' ▲' : ' ▼' ) : '';
 							?>
 							<a href="<?php echo esc_url( $date_sort_url ); ?>">
-								<?php esc_html_e( 'Upload Date', 'pdf-attestation-tool' ); echo esc_html( $date_indicator ); ?>
+								<?php esc_html_e( 'Upload Date', 'pc-pdf-attestation-tool' ); echo esc_html( $date_indicator ); ?>
 							</a>
 						</th>
-						<th><?php esc_html_e( 'File Status', 'pdf-attestation-tool' ); ?></th>
-						<th><?php esc_html_e( 'Attestation', 'pdf-attestation-tool' ); ?></th>
+						<th><?php esc_html_e( 'Status', 'pc-pdf-attestation-tool' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -417,28 +408,13 @@ class PDF_Attestation_Admin {
 							$upload_date = wp_date( 'M j, Y g:i a', strtotime( $record->timestamp ) );
 
 							// Status display
-							$status = $record->attestation_status ? __( 'Attested', 'pdf-attestation-tool' ) : __( 'Not Attested', 'pdf-attestation-tool' );
-
-							// File status display with formatting
-							$file_status = isset( $record->file_status ) ? $record->file_status : 'active';
-							$file_status_display = ucfirst( $file_status );
+							$status = $record->attestation_status ? __( 'Attested', 'pc-pdf-attestation-tool' ) : __( 'Not Attested', 'pc-pdf-attestation-tool' );
 							?>
 							<tr>
 								<td><?php echo esc_html( $site_name ); ?></td>
 								<td><?php echo esc_html( $record->username ); ?></td>
 								<td><?php echo esc_html( $record->filename ); ?></td>
 								<td><?php echo esc_html( $upload_date ); ?></td>
-								<td><span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; 
-									<?php
-									if ( 'deleted' === $file_status ) {
-										echo 'background-color: #fee; color: #c00;';
-									} elseif ( 'replaced' === $file_status ) {
-										echo 'background-color: #ffd; color: #880;';
-									} else {
-										echo 'background-color: #efe; color: #080;';
-									}
-									?>
-									"><?php echo esc_html( $file_status_display ); ?></span></td>
 								<td><?php echo esc_html( $status ); ?></td>
 							</tr>
 							<?php
@@ -446,8 +422,8 @@ class PDF_Attestation_Admin {
 					} else {
 						?>
 						<tr>
-							<td colspan="6" style="text-align: center; padding: 20px;">
-								<?php esc_html_e( 'No attestation records found.', 'pdf-attestation-tool' ); ?>
+							<td colspan="5" style="text-align: center; padding: 20px;">
+								<?php esc_html_e( 'No attestation records found.', 'pc-pdf-attestation-tool' ); ?>
 							</td>
 						</tr>
 						<?php
@@ -465,8 +441,8 @@ class PDF_Attestation_Admin {
 						array(
 							'base'      => add_query_arg( 'paged', '%#%' ),
 							'format'    => '',
-							'prev_text' => __( '&laquo; Previous', 'pdf-attestation-tool' ),
-							'next_text' => __( 'Next &raquo;', 'pdf-attestation-tool' ),
+							'prev_text' => __( '&laquo; Previous', 'pc-pdf-attestation-tool' ),
+							'next_text' => __( 'Next &raquo;', 'pc-pdf-attestation-tool' ),
 							'total'     => $total_pages,
 							'current'   => $paged,
 							'type'      => 'array',
@@ -536,18 +512,18 @@ class PDF_Attestation_Admin {
 	 */
 	public function handle_csv_export() {
 		// Check if export was requested
-		if ( ! isset( $_POST['pdf_export_csv'] ) ) {
+		if ( ! isset( $_POST['pc_pdf_export_csv'] ) ) {
 			return;
 		}
 
 		// Verify nonce for security
-		if ( ! isset( $_POST['export_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['export_nonce'] ) ), 'pdf_attestation_export_nonce' ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'pdf-attestation-tool' ) );
+		if ( ! isset( $_POST['export_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['export_nonce'] ) ), 'pc_pdf_attestation_export_nonce' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'pc-pdf-attestation-tool' ) );
 		}
 
 		// Verify user capability
 		if ( ! current_user_can( 'manage_network' ) ) {
-			wp_die( esc_html__( 'You do not have permission to export attestation records.', 'pdf-attestation-tool' ) );
+			wp_die( esc_html__( 'You do not have permission to export attestation records.', 'pc-pdf-attestation-tool' ) );
 		}
 
 		// Build filter arguments from POST data
@@ -566,7 +542,7 @@ class PDF_Attestation_Admin {
 
 		// If no records, show message and return
 		if ( empty( $attestations ) ) {
-			wp_die( esc_html__( 'No records found to export.', 'pdf-attestation-tool' ) );
+			wp_die( esc_html__( 'No records found to export.', 'pc-pdf-attestation-tool' ) );
 		}
 
 		// Set up CSV headers
