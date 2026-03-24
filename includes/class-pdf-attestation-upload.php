@@ -121,8 +121,8 @@ class PC_PDF_Attestation_Upload {
 
 			<style>
 				.pc-pdf-info-box {
-					background: #f6f7f7;
-					border: 1px solid #c3c4c7;
+					background: #FFFF8B;
+					border: 2px solid #C73B0E;
 					border-left: 4px solid #72777c;
 					border-radius: 4px;
 					padding: 14px 18px;
@@ -234,7 +234,7 @@ class PC_PDF_Attestation_Upload {
 
 			<!-- Informational Notice -->
 			<div class="pc-pdf-info-box">
-				<h2>&#128203; <?php esc_html_e( 'Please Read Before Uploading', 'pc-pdf-attestation-tool' ); ?></h2>
+				<h2 style="font-size : 18pt ; ">&#128203; <?php esc_html_e( 'Please Read Before Uploading', 'pc-pdf-attestation-tool' ); ?></h2>
 				<ul>
 					<li><?php esc_html_e( 'The College does not support nor encourage the use of PDF files on providence.edu websites.', 'pc-pdf-attestation-tool' ); ?></li>
 					<li><?php esc_html_e( 'If you upload a PDF, the Web Services team will not be able to assist in making it accessible.', 'pc-pdf-attestation-tool' ); ?></li>
@@ -298,7 +298,7 @@ class PC_PDF_Attestation_Upload {
 										</p>
 										<ul>
 											<li><?php esc_html_e( 'You have personally reviewed this PDF for accessibility compliance.', 'pc-pdf-attestation-tool' ); ?></li>
-											<li><?php esc_html_e( 'This PDF conforms to current WCAG standards for PDF accessibility.', 'pc-pdf-attestation-tool' ); ?></li>
+											<li><?php echo wp_kses_post( __( 'This PDF conforms to <a href="https://www.w3.org/WAI/">current WCAG standards</a> for PDF accessibility.', 'pc-pdf-attestation-tool' ) ); ?></li>
 											<li><?php esc_html_e( 'You understand that the College does not support PDF files and cannot assist with accessibility issues after upload.', 'pc-pdf-attestation-tool' ); ?></li>
 											<li><?php esc_html_e( 'You are personally responsible for ensuring this document meets all applicable accessibility requirements.', 'pc-pdf-attestation-tool' ); ?></li>
 										</ul>
